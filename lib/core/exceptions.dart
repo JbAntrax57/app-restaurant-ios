@@ -3,7 +3,7 @@ class AppException implements Exception {
   AppException(this.message);
   @override
   String toString() => message;
-}
+} 
 
 class AuthenticationException implements Exception {
   final String message;
