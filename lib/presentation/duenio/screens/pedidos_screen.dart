@@ -28,6 +28,16 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
     {'label': 'Cancelado', 'color': Colors.red},
   ];
 
+  // Orden personalizado de estados
+  final List<String> _ordenEstados = [
+    'pendiente',
+    'preparando',
+    'en camino',
+    'listo',
+    'entregado',
+    'cancelado',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -136,7 +146,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
         child: Scaffold(
           backgroundColor: Colors.blue[50],
           appBar: AppBar(
-            backgroundColor: Colors.blue[50],
+      backgroundColor: Colors.blue[50],
             title: const Text('Pedidos del negocio'),
             centerTitle: true,
             actions: [
@@ -157,7 +167,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+        children: [
                       Icon(
                         Icons.error_outline,
                         size: 64,
@@ -188,7 +198,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                 )
               : _pedidos.isEmpty
               ? Center(
-                  child: Column(
+              child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
@@ -237,7 +247,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                 color: selected
                                     ? estado['color'] as Color
                                     : Colors.black87,
-                                fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                               ),
                               onSelected: (_) {
                                 setState(() {
@@ -268,7 +278,8 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                           .toList())
                                 .length,
                         itemBuilder: (context, index) {
-                          final pedidosFiltrados = _filtroEstado == null
+                          // Filtrar y ordenar los pedidos por estado personalizado
+                          List<Map<String, dynamic>> pedidosFiltrados = _filtroEstado == null
                               ? _pedidos
                               : _pedidos
                                     .where(
@@ -277,6 +288,17 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                           _filtroEstado!.toLowerCase(),
                                     )
                                     .toList();
+                          pedidosFiltrados.sort((a, b) {
+                            final estadoA = (a['estado'] ?? '').toString().toLowerCase();
+                            final estadoB = (b['estado'] ?? '').toString().toLowerCase();
+                            final idxA = _ordenEstados.indexOf(estadoA);
+                            final idxB = _ordenEstados.indexOf(estadoB);
+                            if (idxA == idxB) {
+                              // Si el estado es igual, ordenar por fecha descendente
+                              return (b['created_at'] ?? '').compareTo(a['created_at'] ?? '');
+                            }
+                            return idxA.compareTo(idxB);
+                          });
                           final pedido = pedidosFiltrados[index];
                           final productos = List<Map<String, dynamic>>.from(
                             pedido['productos'] ?? [],
@@ -306,9 +328,9 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
                                   // Header con estado y fecha
                                   Row(
                                     mainAxisAlignment:
@@ -397,8 +419,8 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                           padding: const EdgeInsets.only(
                                             bottom: 4,
                                           ),
-                                          child: Row(
-                                            children: [
+                                child: Row(
+                                  children: [
                                               Text(
                                                 '• ${producto['nombre']?.toString() ?? 'Sin nombre'}',
                                                 style: const TextStyle(
@@ -491,7 +513,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                           ),
                                         ),
                                       ),
-                                      onPressed: () async {
+                                          onPressed: () async {
                                         final nuevoEstado =
                                             await showModalBottomSheet<String>(
                                               context: context,
@@ -566,6 +588,11 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                                               content: Text(
                                                 'Estado actualizado a $nuevoEstado',
                                               ),
+                                              backgroundColor: Colors.green,
+                                              duration: const Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                              margin: const EdgeInsets.only(top: 60, left: 16, right: 16),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                             ),
                                           );
                                         }
@@ -842,10 +869,10 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                             fontSize: 15,
                             color: Colors.black87,
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
+            ),
+          ),
+        ],
+      ),
                 ],
                 // Referencias
                 if (pedido['referencias'] != null &&
@@ -853,7 +880,7 @@ class _DuenioPedidosScreenState extends State<DuenioPedidosScreen> {
                   const SizedBox(height: 10),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+        children: [
                       const Icon(
                         Icons.info_outline,
                         color: Colors.orange,

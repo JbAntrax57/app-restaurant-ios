@@ -11,18 +11,5 @@ const localizationsDelegates = [
   GlobalWidgetsLocalizations.delegate,
   GlobalCupertinoLocalizations.delegate,
 ];
-
-class AppLocalization {
-  static String getString(String key) {
-    // Retorna la traducción si existe, si no, retorna el key
-    return _localizedStrings[key] ?? key;
-  }
-
-  static const Map<String, String> _localizedStrings = {
-    'profile': 'Mi Perfil',
-    'cart_empty': 'Tu carrito está vacío',
-    // Agrega aquí más claves según lo que uses en la app
-  };
-}
 // Fin de localization.dart
 // Todos los métodos, variables y widgets están documentados para facilitar el mantenimiento y la extensión. 

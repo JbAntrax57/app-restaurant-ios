@@ -551,6 +551,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                           );
                                         },
                                       ),
+
                                       const Divider(),
 
                                       // Cerrar sesión

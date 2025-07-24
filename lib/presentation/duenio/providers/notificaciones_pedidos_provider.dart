@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Importa Supabase
 import '../../cliente/providers/carrito_provider.dart'; // Importa CarritoProvider correctamente
+import 'package:permission_handler/permission_handler.dart'; // Para pedir permisos
 
 class NotificacionesPedidosProvider extends ChangeNotifier {
   final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
@@ -12,6 +13,7 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
   String? _restauranteId;
   BuildContext? _contextoGlobal;
   bool _inicializado = false;
+  RealtimeChannel? _realtimeChannel; // Canal para Realtime
 
   // Inicializar el sistema de notificaciones al arrancar la app
   Future<void> inicializarSistema() async {
@@ -28,9 +30,7 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
     _contextoGlobal = context;
     _notificados.clear();
     _pedidoSub?.cancel();
-    
-    // Por ahora, usar una implementación simple sin Realtime
-    // TODO: Implementar Supabase Realtime cuando esté disponible
+    _suscribirsePedidosRealtime(restauranteId); // Suscribirse a Realtime
     print('🔔 Notificaciones configuradas para restaurante: $restauranteId');
   }
 
@@ -45,6 +45,9 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
 
     await _localNotifications.initialize(initSettings);
     
+    // Pedir permisos de notificación en Android/iOS
+    await _pedirPermisosNotificacion();
+
     // Crear canal de notificaciones para Android
     const androidChannel = AndroidNotificationChannel(
       'pedidos_channel',
@@ -59,6 +62,15 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
         ?.createNotificationChannel(androidChannel);
   }
 
+  // Pedir permisos de notificación en Android/iOS
+  Future<void> _pedirPermisosNotificacion() async {
+    // Android 13+
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
+    // iOS: handled by flutter_local_notifications
+  }
+
   void _escucharTodosLosPedidos() {
     print('🔔 Iniciando escucha de todos los pedidos...');
     _pedidoSub?.cancel();
@@ -69,9 +81,27 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
   }
 
   // Suscribirse a cambios en la tabla de pedidos usando Supabase Realtime
-  void suscribirsePedidos(String restauranteId) {
-    // TODO: Implementar cuando Supabase Realtime esté disponible
-    print('🔔 Suscripción a pedidos configurada para: $restauranteId');
+  void _suscribirsePedidosRealtime(String restauranteId) {
+    _realtimeChannel?.unsubscribe();
+    print('🔔 Suscribiéndose a pedidos Realtime para restaurante: $restauranteId');
+    _realtimeChannel = Supabase.instance.client
+      .channel('public:pedidos')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'pedidos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'restaurante_id',
+          value: restauranteId,
+        ),
+        callback: (payload) {
+          print('🔔 Nuevo pedido detectado por Realtime: ${payload.newRecord}');
+          _mostrarNotificacionNativa();
+          _mostrarSnackBar(); // Refuerzo visual arriba
+        },
+      )
+      .subscribe();
   }
 
   void _escucharPedidosNuevos() {
@@ -120,6 +150,8 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
             content: Text('¡Nuevo pedido recibido!'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(top: 60, left: 16, right: 16),
           ),
         );
         print('🔔 SnackBar mostrado');
@@ -137,6 +169,7 @@ class NotificacionesPedidosProvider extends ChangeNotifier {
   @override
   void dispose() {
     _pedidoSub?.cancel();
+    _realtimeChannel?.unsubscribe(); // Cancelar la suscripción Realtime
     super.dispose();
   }
 } 

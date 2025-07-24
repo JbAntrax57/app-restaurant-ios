@@ -3,33 +3,37 @@
 // Para agregar rutas, edita el arreglo 'routes'.
 // Todos los métodos, variables y widgets están documentados para facilitar el mantenimiento y la extensión.
 import 'package:go_router/go_router.dart';
-import 'package:flutter/material.dart';
 import '../presentation/cliente/screens/home_screen.dart';
-import '../presentation/cliente/screens/login_screen.dart';
+import '../presentation/common/screens/login_screen.dart';
 import '../presentation/duenio/screens/dashboard_screen.dart';
 import '../presentation/admin/screens/admin_home.dart';
 import '../presentation/cliente/screens/carrito_screen.dart';
-import '../presentation/cliente/screens/perfil_screen.dart';
-import '../presentation/common/pages/login_page.dart';
-import '../presentation/common/pages/splash_page.dart';
-import '../presentation/common/pages/register_page.dart';
+import '../presentation/common/screens/splash_screen.dart';
+import '../presentation/common/screens/register_screen.dart';
 
 final router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   routes: [
     GoRoute(
-      path: '/',
-      builder: (context, state) => const SplashPage(),
+      path: '/splash',
+      builder: (context, state) {
+        print('🛣️ Router: Navegando a /splash');
+        return const SplashScreen();
+      },
     ),
     GoRoute(
       path: '/login',
       builder: (context, state) {
-        return const LoginPage();
+        print('🛣️ Router: Navegando a /login');
+        return const LoginScreen();
       },
     ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterPage(),
+      builder: (context, state) {
+        print('🛣️ Router: Navegando a /register');
+        return const RegisterScreen();
+      },
     ),
     GoRoute(
       path: '/cliente',
@@ -48,13 +52,6 @@ final router = GoRouter(
       },
     ),
     GoRoute(
-      path: '/cliente/perfil',
-      builder: (context, state) {
-        print('🛣️ Router: Navegando a /cliente/perfil');
-        return const PerfilScreen();
-      },
-    ),
-    GoRoute(
       path: '/duenio',
       builder: (context, state) => const DuenioDashboardScreen(),
     ),
@@ -65,4 +62,4 @@ final router = GoRouter(
   ],
 );
 // Fin de router.dart
-// Todos los métodos, variables y widgets están documentados para facilitar el mantenimiento y la extensión. 
+// Todos los métodos, variables y widgets están documentados para facilitar el mantenimiento y la extensión.
