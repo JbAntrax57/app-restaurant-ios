@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'usuarios_section.dart';
 import 'negocios_section.dart';
 import 'reportes_section.dart';
+import 'configuracion_section.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -19,7 +20,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     AdminUsuariosSection(),
     AdminNegociosSection(),
     AdminReportesSection(),
-    _AdminSectionPlaceholder(title: 'Configuración', icon: Icons.settings),
+    AdminConfiguracionSection(),
   ];
 
   void _onItemTapped(int index) {

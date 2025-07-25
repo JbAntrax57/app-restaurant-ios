@@ -17,6 +17,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/duenio/providers/notificaciones_pedidos_provider.dart';
+import 'application/providers/puntos_provider.dart';
 import 'core/env.dart'; // Importa las variables de entorno
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // Importa flutter_dotenv
 import 'core/theme.dart';
@@ -57,6 +58,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => CarritoProvider()),
         ChangeNotifierProvider(create: (_) => NotificacionesPedidosProvider()),
+        ChangeNotifierProvider(create: (_) => PuntosProvider()),
       ],
       child: const MyApp(),
     ),

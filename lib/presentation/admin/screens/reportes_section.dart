@@ -344,7 +344,7 @@ class _AdminReportesSectionState extends State<AdminReportesSection> {
       for (final negocio in negociosData) {
         negocioNombres[negocio['id']] = negocio['nombre'] ?? 'Negocio sin nombre';
         final duenoId = negocio['usuarioid']?.toString();
-        negocioDuenos[negocio['id']] = usuarioNombres[duenoId] ?? 'Dueño sin nombre';
+        negocioDuenos[negocio['id']] = usuarioNombres[duenoId] ?? 'Dueno sin nombre';
       }
 
       // Agrupar por restaurante
@@ -369,7 +369,7 @@ class _AdminReportesSectionState extends State<AdminReportesSection> {
         final negocioId = entry.key;
         return {
           'nombre': negocioNombres[negocioId] ?? 'Negocio sin nombre',
-          'dueno': negocioDuenos[negocioId] ?? 'Dueño sin nombre',
+          'dueno': negocioDuenos[negocioId] ?? 'Dueno sin nombre',
           'pedidos': entry.value,
           'ingresos': ingresosPorNegocio[negocioId] ?? 0,
         };
@@ -458,20 +458,25 @@ class _AdminReportesSectionState extends State<AdminReportesSection> {
                   ),
                 ),
               ),
-              DropdownButton<String>(
-                value: _periodoSeleccionado,
-                items: const [
-                  DropdownMenuItem(value: 'hoy', child: Text('Hoy')),
-                  DropdownMenuItem(value: 'semana', child: Text('Esta semana')),
-                  DropdownMenuItem(value: 'mes', child: Text('Este mes')),
-                  DropdownMenuItem(value: 'año', child: Text('Este año')),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _periodoSeleccionado = value!;
-                  });
-                  _cargarReportes();
-                },
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 150,
+                child: DropdownButton<String>(
+                  value: _periodoSeleccionado,
+                  isExpanded: true,
+                  items: const [
+                    DropdownMenuItem(value: 'hoy', child: Text('Hoy')),
+                    DropdownMenuItem(value: 'semana', child: Text('Esta semana')),
+                    DropdownMenuItem(value: 'mes', child: Text('Este mes')),
+                    DropdownMenuItem(value: 'año', child: Text('Este año')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _periodoSeleccionado = value!;
+                    });
+                    _cargarReportes();
+                  },
+                ),
               ),
             ],
           ),
