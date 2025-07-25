@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'usuarios_section.dart';
 import 'negocios_section.dart';
+import 'reportes_section.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -17,9 +18,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   static const List<Widget> _pages = <Widget>[
     AdminUsuariosSection(),
     AdminNegociosSection(),
-    _AdminSectionPlaceholder(title: 'Reportes', icon: Icons.bar_chart),
-    _AdminSectionPlaceholder(title: 'Pedidos', icon: Icons.receipt_long),
-    _AdminSectionPlaceholder(title: 'Productos', icon: Icons.restaurant_menu),
+    AdminReportesSection(),
     _AdminSectionPlaceholder(title: 'Configuración', icon: Icons.settings),
   ];
 
@@ -54,14 +53,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
             label: 'Reportes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'Pedidos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Productos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),

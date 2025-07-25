@@ -39,6 +39,9 @@ dependencies:
   logger: ^2.0.2
   google_fonts: ^6.1.0
   carousel_slider: ^5.1.1
+  
+  # Charts for reports
+  fl_chart: ^0.69.0
 
 dev_dependencies:
   flutter_test:
