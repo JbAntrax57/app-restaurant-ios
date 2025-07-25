@@ -21,6 +21,7 @@ import 'application/providers/puntos_provider.dart';
 import 'core/env.dart'; // Importa las variables de entorno
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // Importa flutter_dotenv
 import 'core/theme.dart';
+import 'services/notificaciones_push_service.dart';
 // Importa las pantallas principales de cada rol si existen
 // Si no, usa un Scaffold temporal
 
@@ -82,6 +83,9 @@ class _MyAppState extends State<MyApp> {
   Future<void> _inicializarApp() async {
     // Solicitar permisos de notificaciones
     await _solicitarPermisosNotificaciones();
+    
+    // Inicializar notificaciones locales
+    await NotificacionesPushService.inicializarNotificaciones();
     
     // Inicializar sistema de notificaciones global
     WidgetsBinding.instance.addPostFrameCallback((_) {
