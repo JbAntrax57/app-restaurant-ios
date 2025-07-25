@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/carrito_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'carrito_screen.dart';
+import '../../../shared/widgets/custom_alert.dart';
 
 class MenuScreen extends StatefulWidget {
   final String restauranteId;
@@ -272,23 +273,9 @@ class _MenuScreenState extends State<MenuScreen> {
 
                         Navigator.pop(context);
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '${producto['nombre']} x$cantidad agregado al carrito',
-                            ),
-                            backgroundColor: Colors.green,
-                            duration: const Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                            margin: const EdgeInsets.only(
-                              top: 60,
-                              left: 16,
-                              right: 16,
-                            ), // Mostrar pegado arriba
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
+                        showSuccessAlert(
+                          context,
+                          '${producto['nombre']} x$cantidad agregado al carrito',
                         );
                       },
                     ),
@@ -363,24 +350,34 @@ class _MenuScreenState extends State<MenuScreen> {
                         Positioned(
                           right: 8,
                           top: 8,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
-                            child: Text(
-                              '${carritoProvider.carrito.length}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                          child: GestureDetector(
+                            onTap: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CarritoScreen(),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              textAlign: TextAlign.center,
+                              constraints: const BoxConstraints(
+                                minWidth: 20,
+                                minHeight: 20,
+                              ),
+                              child: Text(
+                                '${carritoProvider.carrito.length}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
                         ),

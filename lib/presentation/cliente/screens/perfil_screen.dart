@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../providers/carrito_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'historial_pedidos_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart';
+import '../../../shared/widgets/custom_alert.dart';
 
 // perfil_screen.dart - Pantalla de perfil del cliente
 // Permite ver y editar información del usuario
@@ -113,12 +116,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Perfil actualizado correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      showSuccessAlert(context, 'Perfil actualizado correctamente');
     } catch (e) {
       setState(() {
         _error = 'Error al actualizar perfil: $e';
@@ -140,7 +138,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () async {
+              // Limpia sesión de Supabase (si aplica)
+              await Supabase.instance.client.auth.signOut();
+              // Limpia todas las preferencias
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (mounted) {
+                context.read<CarritoProvider>().setUserEmail('');
+                context.read<CarritoProvider>().setUserId('');
+                context.read<CarritoProvider>().setRestauranteId(null);
+              }
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const ClienteLoginScreen()),
+                (route) => false,
+              );
+            },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Cerrar sesión'),
           ),
@@ -565,6 +579,74 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                           'Salir de la aplicación',
                                         ),
                                         onTap: _cerrarSesion,
+                                      ),
+
+                                      // Botón: Quiero ser repartidor
+                                      const Divider(),
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.delivery_dining,
+                                          color: Colors.purple,
+                                        ),
+                                        title: const Text('Quiero ser repartidor'),
+                                        subtitle: const Text('Notificar a los restaurantes que estoy disponible'),
+                                        onTap: () async {
+                                          // Verificar datos del usuario
+                                          final nombre = _nombreController.text.trim();
+                                          final correo = _usuario?['email']?.toString() ?? '';
+                                          final direccion = _direccionController.text.trim();
+                                          final telefono = _telefonoController.text.trim();
+                                          if (nombre.isEmpty || correo.isEmpty || direccion.isEmpty || telefono.isEmpty) {
+                                            showWarningAlert(
+                                              context,
+                                              'Por favor, completa todos tus datos (nombre, correo, dirección y teléfono) antes de solicitar ser repartidor.',
+                                            );
+                                            return;
+                                          }
+                                          // Mostrar loading
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (context) => const Center(child: CircularProgressIndicator()),
+                                          );
+                                          try {
+                                            // Obtener todos los dueños de negocios
+                                            final duenos = await Supabase.instance.client
+                                              .from('usuarios')
+                                              .select()
+                                              .eq('rol', 'duenio');
+                                            
+                                            print('🔔 Encontrados ${duenos.length} dueños de restaurantes');
+                                            
+                                            // Insertar notificación para cada dueño
+                                            for (final dueno in duenos) {
+                                              final usuarioId = dueno['id']?.toString() ?? dueno['user_id']?.toString() ?? dueno['uid']?.toString();
+                                              if (usuarioId != null && usuarioId.isNotEmpty) {
+                                                await Supabase.instance.client.from('notificaciones').insert({
+                                                  'usuario_id': usuarioId,
+                                                  'mensaje': 'El cliente $nombre ($correo) quiere ser repartidor. Dirección: $direccion, Teléfono: $telefono',
+                                                  'tipo': 'repartidor_disponible',
+                                                  'leida': false,
+                                                  'fecha': DateTime.now().toIso8601String(),
+                                                });
+                                                print('🔔 Notificación enviada a dueño: ${dueno['email']}');
+                                              } else {
+                                                print('⚠️ No se pudo obtener ID de usuario para: ${dueno['email']}');
+                                              }
+                                            }
+                                            Navigator.pop(context); // Cerrar loading
+                                            showSuccessAlert(
+                                              context,
+                                              '¡Se notificó a los restaurantes que quieres ser repartidor!',
+                                            );
+                                          } catch (e) {
+                                            Navigator.pop(context); // Cerrar loading
+                                            showErrorAlert(
+                                              context,
+                                              'Error al notificar: ${e.toString()}',
+                                            );
+                                          }
+                                        },
                                       ),
                                     ],
                                   ),

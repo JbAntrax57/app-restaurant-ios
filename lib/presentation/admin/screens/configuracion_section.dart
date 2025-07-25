@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/puntos_dialog.dart';
 import 'package:intl/intl.dart';
-import 'historial_puntos_screen.dart';
 
 class AdminConfiguracionSection extends StatefulWidget {
   const AdminConfiguracionSection({super.key});
@@ -486,17 +485,6 @@ class _AdminConfiguracionSectionState extends State<AdminConfiguracionSection> {
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.history, color: Colors.blue),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => HistorialPuntosScreen(dueno: dueno),
-                          ),
-                        );
-                      },
-                      tooltip: 'Ver historial',
-                    ),
                     IconButton(
                       icon: const Icon(Icons.add, color: Colors.green),
                       onPressed: () => _mostrarDialogoPuntos(dueno, 'agregar'),

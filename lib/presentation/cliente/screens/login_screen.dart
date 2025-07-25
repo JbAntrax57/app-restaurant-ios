@@ -6,6 +6,13 @@ import '../../duenio/providers/notificaciones_pedidos_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Importa Supabase
 import 'package:crypto/crypto.dart'; // Para encriptar la contraseña
 import 'dart:convert'; // Para utf8.encode
+import '../../repartidor/screens/pedidos_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../cliente/screens/home_screen.dart';
+import '../../repartidor/screens/pedidos_screen.dart';
+import '../../duenio/screens/dashboard_screen.dart';
+import '../../admin/screens/admin_home.dart';
+import '../../common/screens/register_screen.dart';
 
 // login_screen.dart - Pantalla de inicio de sesión para clientes y demo multirol
 // Permite iniciar sesión con usuarios demo y navega según el rol seleccionado.
@@ -31,11 +38,10 @@ class _LoginScreenState extends State<ClienteLoginScreen> {
 
   // Usuarios demo por rol (Cliente, Repartidor, Dueño, Admin)
   final demoUsers = [
-    {'email': 'cliente1@demo.com', 'password': '1234', 'rol': 'Cliente'},
-    {'email': 'cliente2@demo.com', 'password': '1234', 'rol': 'Cliente'},
-    {'email': 'repartidor@demo.com', 'password': '1234', 'rol': 'Repartidor'},
-    {'email': 'duenio@demo.com', 'password': '1234', 'rol': 'Duenio'},
-    {'email': 'admin@demo.com', 'password': '1234', 'rol': 'Admin'},
+    {'email': 'cliente@wasp.mx', 'password': 'cliente123', 'rol': 'Cliente'},
+    {'email': 'repartidor@wasp.mx', 'password': 'res123', 'rol': 'Repartidor'},
+    {'email': 'res@wasp.mx', 'password': 'res123', 'rol': 'Duenio'},
+    {'email': 'admin@wasp.mx', 'password': 'res123', 'rol': 'Admin'},
   ];
 
   // Función para encriptar la contraseña con SHA-256
@@ -72,6 +78,15 @@ class _LoginScreenState extends State<ClienteLoginScreen> {
       // Configura el carrito global para este usuario
       context.read<CarritoProvider>().setUserEmail(email);
       final rol = (userData['rol'] as String).toLowerCase();
+      final userId = userData['user_id']?.toString() ?? userData['id']?.toString();
+      // Guarda el estado de login, el rol y el id en shared_preferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      await prefs.setString('userRol', rol);
+      if (userId != null) await prefs.setString('userId', userId);
+      await prefs.setString('userEmail', email);
+      // Asigna el id al provider global
+      if (userId != null) context.read<CarritoProvider>().setUserId(userId);
       
       // Si es dueño, configura el restauranteId en el provider y activa notificaciones globales
       print('🔐 Login: id: ${userData['restaurante_id']}');
@@ -90,20 +105,32 @@ class _LoginScreenState extends State<ClienteLoginScreen> {
       // Navega según el rol
       switch (rol) {
         case 'cliente':
-          print('🔐 Login: Navegando a cliente con rol: $rol');
-          print('🔐 Login: Email del usuario: $email');
-          print('🔐 Login: Usando context.go("/cliente")');
-          context.go('/cliente');
-          print('🔐 Login: Navegación completada');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+          );
           break;
         case 'repartidor':
-          context.go('/repartidor');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const RepartidorPedidosScreen()),
+            (route) => false,
+          );
           break;
         case 'duenio':
-          context.go('/duenio');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const DuenioDashboardScreen()),
+            (route) => false,
+          );
           break;
         case 'admin':
-          context.go('/admin');
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+            (route) => false,
+          );
           break;
         default:
           setState(() {
@@ -120,7 +147,10 @@ class _LoginScreenState extends State<ClienteLoginScreen> {
 
   // Navega a la pantalla de registro
   void _goToRegister() {
-    context.go('/register');
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+    );
   }
 
   @override

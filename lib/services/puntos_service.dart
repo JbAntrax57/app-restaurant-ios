@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'notificaciones_push_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class PuntosService {
@@ -25,18 +24,74 @@ class PuntosService {
   // Consumir puntos al crear un pedido
   static Future<bool> consumirPuntosEnPedido(String duenoId, {int puntosConsumir = 2}) async {
     try {
-      final result = await Supabase.instance.client
-          .rpc('consumir_puntos_pedido', params: {
-        'p_dueno_id': duenoId,
-        'p_puntos_consumir': puntosConsumir,
-      });
+      // Intentar usar la función RPC primero
+      try {
+        final result = await Supabase.instance.client
+            .rpc('consumir_puntos_pedido', params: {
+          'p_dueno_id': duenoId,
+          'p_puntos_consumir': puntosConsumir,
+        });
 
-      // Verificar estado de restaurantes después de consumir puntos
-      await verificarEstadoRestaurantes();
+        // Verificar estado de restaurantes después de consumir puntos
+        await verificarEstadoRestaurantes();
 
-      return result == true;
+        return result == true;
+      } catch (e) {
+        print('RPC no disponible, usando método directo: $e');
+        // Si la función RPC no está disponible, usar método directo
+        return await _consumirPuntosDirecto(duenoId, puntosConsumir);
+      }
     } catch (e) {
       print('Error consumiendo puntos en pedido: $e');
+      return false;
+    }
+  }
+
+  // Método directo para consumir puntos (fallback)
+  static Future<bool> _consumirPuntosDirecto(String duenoId, int puntosConsumir) async {
+    try {
+      // Obtener puntos actuales
+      final currentData = await Supabase.instance.client
+          .from('sistema_puntos')
+          .select('puntos_disponibles, total_asignado')
+          .eq('dueno_id', duenoId)
+          .single();
+
+      final puntosDisponibles = currentData['puntos_disponibles'] ?? 0;
+      
+      // Verificar si tiene suficientes puntos
+      if (puntosDisponibles < puntosConsumir) {
+        print('❌ El dueño no tiene suficientes puntos. Disponibles: $puntosDisponibles, Requeridos: $puntosConsumir');
+        return false;
+      }
+
+      // Calcular nuevos valores
+      final nuevosPuntosDisponibles = puntosDisponibles - puntosConsumir;
+      
+      // Actualizar puntos
+      final result = await Supabase.instance.client
+          .from('sistema_puntos')
+          .update({
+            'puntos_disponibles': nuevosPuntosDisponibles,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('dueno_id', duenoId)
+          .select();
+
+      if (result.isEmpty) {
+        print('❌ No se pudo actualizar los puntos del dueño');
+        return false;
+      }
+
+      print('✅ Puntos consumidos exitosamente: $puntosConsumir puntos');
+      print('✅ Nuevos puntos disponibles: $nuevosPuntosDisponibles');
+      
+      // Verificar estado de restaurantes
+      await verificarEstadoRestaurantes();
+      
+      return true;
+    } catch (e) {
+      print('Error en método directo de consumo de puntos: $e');
       return false;
     }
   }
@@ -336,34 +391,21 @@ class PuntosService {
                });
       print('🔄 Asignación registrada exitosamente');
 
-                     // 3. Enviar notificaciones push
+                     // 3. Crear notificación (opcional)
                try {
-                 print('🔄 Enviando notificaciones push...');
-                 
-                 // Obtener información del dueño
-                 final duenoData = await _client
-                     .from('usuarios')
-                     .select('email')
-                     .eq('id', duenoId)
-                     .single();
-                 
-                 final duenoEmail = duenoData['email'] ?? 'N/A';
-                 final adminEmail = 'admin@wasp.mx'; // Por ahora hardcodeado
-                 
-                 // Importar y usar el servicio de notificaciones
-                 await _enviarNotificacionAsignacion(
-                   duenoId: duenoId,
-                   duenoEmail: duenoEmail,
-                   puntos: puntos,
-                   motivo: motivo,
-                   tipoOperacion: 'agregar',
-                   adminEmail: adminEmail,
-                 );
-                 
-                 print('🔄 Notificaciones enviadas exitosamente');
+                 print('🔄 Creando notificación...');
+                 await _client.from('notificaciones_sistema').insert({
+                   'usuario_id': duenoId,
+                   'tipo': 'asignacion_puntos',
+                   'titulo': 'Puntos Agregados',
+                   'mensaje': 'Se han agregado $puntos puntos a tu cuenta. Motivo: $motivo',
+                   'leida': false,
+                   'created_at': DateTime.now().toIso8601String(),
+                 });
+                 print('🔄 Notificación creada exitosamente');
                } catch (e) {
-                 print('⚠️ Error enviando notificaciones: $e');
-                 print('⚠️ Continuando sin notificaciones...');
+                 print('⚠️ Error creando notificación: $e');
+                 print('⚠️ Continuando sin notificación...');
                }
 
       print('✅ Puntos agregados exitosamente');
@@ -446,34 +488,20 @@ class PuntosService {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      // 4. Enviar notificaciones push
+      // 4. Crear notificación (opcional)
       try {
-        print('🔄 Enviando notificaciones push...');
-        
-        // Obtener información del dueño
-        final duenoData = await _client
-            .from('usuarios')
-            .select('email')
-            .eq('id', duenoId)
-            .single();
-        
-        final duenoEmail = duenoData['email'] ?? 'N/A';
-        final adminEmail = 'admin@wasp.mx'; // Por ahora hardcodeado
-        
-        // Importar y usar el servicio de notificaciones
-        await _enviarNotificacionAsignacion(
-          duenoId: duenoId,
-          duenoEmail: duenoEmail,
-          puntos: puntos,
-          motivo: motivo,
-          tipoOperacion: 'quitar',
-          adminEmail: adminEmail,
-        );
-        
-        print('🔄 Notificaciones enviadas exitosamente');
+        await _client.from('notificaciones_sistema').insert({
+          'usuario_id': duenoId,
+          'tipo': 'asignacion_puntos',
+          'titulo': 'Puntos Quitados',
+          'mensaje': 'Se han quitado $puntos puntos de tu cuenta. Motivo: $motivo',
+          'leida': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('🔄 Notificación creada exitosamente');
       } catch (e) {
-        print('⚠️ Error enviando notificaciones: $e');
-        print('⚠️ Continuando sin notificaciones...');
+        print('⚠️ Error creando notificación: $e');
+        print('⚠️ Continuando sin notificación...');
       }
 
       print('Puntos quitados exitosamente');
@@ -507,29 +535,6 @@ class PuntosService {
     } catch (e) {
       print('Error obteniendo historial: $e');
       return [];
-    }
-  }
-
-  /// Método helper para enviar notificaciones de asignación
-  static Future<void> _enviarNotificacionAsignacion({
-    required String duenoId,
-    required String duenoEmail,
-    required int puntos,
-    required String motivo,
-    required String tipoOperacion,
-    required String adminEmail,
-  }) async {
-    try {
-      await NotificacionesPushService.notificarAsignacionPuntos(
-        duenoId: duenoId,
-        duenoEmail: duenoEmail,
-        puntos: puntos,
-        motivo: motivo,
-        tipoOperacion: tipoOperacion,
-        adminEmail: adminEmail,
-      );
-    } catch (e) {
-      print('❌ Error en _enviarNotificacionAsignacion: $e');
     }
   }
 } 

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'presentation/cliente/screens/login_screen.dart';
 import 'presentation/cliente/screens/menu_screen.dart';
 import 'presentation/cliente/screens/negocios_screen.dart';
-import 'presentation/admin/screens/dashboard_screen.dart';
+import 'presentation/admin/screens/admin_home.dart';
 import 'presentation/duenio/screens/dashboard_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // Importa Supabase
 import 'package:provider/provider.dart';
@@ -17,11 +17,12 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'presentation/duenio/providers/notificaciones_pedidos_provider.dart';
-import 'application/providers/puntos_provider.dart';
 import 'core/env.dart'; // Importa las variables de entorno
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // Importa flutter_dotenv
 import 'core/theme.dart';
-import 'services/notificaciones_push_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'presentation/repartidor/screens/pedidos_screen.dart';
+import 'presentation/cliente/screens/home_screen.dart';
 // Importa las pantallas principales de cada rol si existen
 // Si no, usa un Scaffold temporal
 
@@ -54,21 +55,26 @@ void main() async {
     );
     print('✅ Supabase inicializado con valores por defecto');
   }
+  // Lee el estado de login antes de lanzar la app
+  final prefs = await SharedPreferences.getInstance();
+  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  final userRol = prefs.getString('userRol');
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => CarritoProvider()),
         ChangeNotifierProvider(create: (_) => NotificacionesPedidosProvider()),
-        ChangeNotifierProvider(create: (_) => PuntosProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(isLoggedIn: isLoggedIn, userRol: userRol),
     ),
   );
 }
 
 // Widget raíz de la aplicación. Define el MaterialApp y las rutas principales por rol.
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final bool isLoggedIn;
+  final String? userRol;
+  const MyApp({super.key, required this.isLoggedIn, this.userRol});
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -84,14 +90,31 @@ class _MyAppState extends State<MyApp> {
     // Solicitar permisos de notificaciones
     await _solicitarPermisosNotificaciones();
     
-    // Inicializar notificaciones locales
-    await NotificacionesPushService.inicializarNotificaciones();
-    
-    // Inicializar sistema de notificaciones global
+    // Inicializar sistema de notificaciones global y carrito
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notificacionesProvider = Provider.of<NotificacionesPedidosProvider>(context, listen: false);
       notificacionesProvider.inicializarSistema();
+      
+      // Inicializar carrito si el usuario está logueado
+      if (widget.isLoggedIn) {
+        _inicializarCarrito();
+      }
     });
+  }
+
+  Future<void> _inicializarCarrito() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('userEmail');
+      if (userEmail != null && userEmail.isNotEmpty) {
+        final carritoProvider = Provider.of<CarritoProvider>(context, listen: false);
+        carritoProvider.setUserEmail(userEmail);
+        await carritoProvider.cargarCarrito();
+        print('✅ Carrito inicializado para: $userEmail');
+      }
+    } catch (e) {
+      print('❌ Error inicializando carrito: $e');
+    }
   }
 
   Future<void> _solicitarPermisosNotificaciones() async {
@@ -113,12 +136,38 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Si está logueado, navega directo a la pantalla principal según el rol
+    if (widget.isLoggedIn && widget.userRol != null) {
+      Widget home;
+      switch (widget.userRol!.toLowerCase()) {
+        case 'cliente':
+          home = const HomeScreen();
+          break;
+        case 'repartidor':
+          home = const RepartidorPedidosScreen();
+          break;
+        case 'duenio':
+          home = const DuenioDashboardScreen();
+          break;
+        case 'admin':
+          home = const AdminHomeScreen();
+          break;
+        default:
+          home = const ClienteLoginScreen();
+      }
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'App Demo Multirol',
+        theme: lightTheme,
+        home: home,
+      );
+    }
+    // Si no, usa el router normal (login y flujo estándar)
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'App Demo Multirol',
-      // Usar el nuevo lightTheme personalizado con Montserrat y paleta de azules
       theme: lightTheme,
-      routerConfig: router, // Usar GoRouter centralizado
+      routerConfig: router,
     );
   }
 }
@@ -143,17 +192,6 @@ class RepartidorHomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Inicio Repartidor')), 
       body: const Center(child: Text('Vista principal Repartidor')), 
-    );
-  }
-}
-// Pantalla principal temporal para admin (no se usa, se usa AdminDashboardScreen)
-class AdminHomeScreen extends StatelessWidget {
-  const AdminHomeScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Inicio Admin')), 
-      body: const Center(child: Text('Vista principal Admin')), 
     );
   }
 }

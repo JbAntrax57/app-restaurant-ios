@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'usuarios_section.dart';
 import 'negocios_section.dart';
 import 'reportes_section.dart';
 import 'configuracion_section.dart';
+import '../../cliente/screens/login_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -29,6 +31,40 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
   }
 
+  // Función para cerrar sesión
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.clear();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ClienteLoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    // No es necesario más lógica aquí, ya que la navegación se hace en el ElevatedButton
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,6 +72,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         title: Text(_pages[_selectedIndex] is _AdminSectionPlaceholder
             ? (_pages[_selectedIndex] as _AdminSectionPlaceholder).title
             : 'Admin'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Cerrar Sesión',
+          ),
+        ],
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
